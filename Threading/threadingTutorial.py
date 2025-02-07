@@ -1,6 +1,5 @@
 import queue
 import threading
-from random import random
 from time import sleep
 
 import board
@@ -34,12 +33,10 @@ myThread.start()
 
 
 while True:
-	# Do some things…
-	putSomething = random()
 
 	# Send it to the thread
 	if True: # Put your own conditional here (i.e. ArUco marker moved)
-		q.put(putSomething)
+		q.put(..........)
 
 	# Carry on…
 	sleep(1) # I wouldn’t keep this here outside of this example
