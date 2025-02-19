@@ -1,5 +1,5 @@
 # Assignment 1
 # Computer Vision
-insert description here
+Familiarization with Raspberry Pi and coding in Python
 # Controls
 insert description here
