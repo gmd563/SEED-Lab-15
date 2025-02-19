@@ -1,2 +1,7 @@
 # SEED-Lab-15
-Grace Davis, Sophia Mimlitz, Ryan Cockrill, Ian Keeffe, Yoon Seok Lee
+Computer Vision:
+Grace Davis, Sophia Mimlitz, Ryan Cockrill
+Controlls:
+Ian Keeffe, Yoon Seok Lee
+# Projects
+1. Mini Project
