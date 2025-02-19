@@ -1,5 +1,6 @@
 #Ryan Cockrill
 #Assignment 1 part 1
+#Does a bunch of random stuff. 6 different things. 
 
 #Imports
 from collections import Counter
