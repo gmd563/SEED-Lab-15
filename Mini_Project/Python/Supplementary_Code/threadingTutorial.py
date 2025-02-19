@@ -1,3 +1,7 @@
+# Sophia Mimlitz
+# Basic python code for creating a thread
+# Created using the tutorial in the Mini Project assignment
+
 import queue
 import threading
 from time import sleep
@@ -5,7 +9,7 @@ from time import sleep
 import board
 import adafruit_character_lcd.character_lcd_rgb_i2c as character_lcd
 
-
+# Create a queue
 q = queue.Queue()
 
 
@@ -21,13 +25,14 @@ def myFunction():
 	lcd.text_direction = lcd.LEFT_TO_RIGHT
 	##########################################################
 
+	# Check queue
 	while True:
 		if not q.empty():
 			gotSomething = q.get()
 			print(“I got: {}”.format(gotSomething))
 			# Write new data to the LCD here
 
-
+# Start thread
 myThread = threading.Thread(target = myFunction, args = ())
 myThread.start()
 
