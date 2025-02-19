@@ -1,5 +1,7 @@
 # Ryan Cockrill
-# Mix it all together (the ArUco detection, LCD, and sending to Arduino)
+# Code that combines the ArUco detection, LCD, and sending bytes to Arduino
+# First try at incorporating all individually-written python code
+# Required some debugging/changes
 
 #imports
 import cv2
@@ -18,11 +20,13 @@ camera = cv2.VideoCapture(0)
 aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_50)
 parameters = aruco.DetectorParameters()
 
-q = queue.Queue(maxsize=1)  # Queue for LCD updates
+# Queue for LCD updates
+q = queue.Queue(maxsize=1)
 
 # Store last displayed quadrant
 last_quadrant = None  
 
+# Define thread
 def lcd_thread():
     lcdCols = 16
     lcdRows = 2
@@ -34,6 +38,7 @@ def lcd_thread():
 
     last_message = None  # Store last message displayed
 
+    # Check queue
     while True:
         if not q.empty():
             message = q.get()
