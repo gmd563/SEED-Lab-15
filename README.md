@@ -1,1 +1,1 @@
-# SEED-Lab - Mini-Project
+# SEED-Lab
