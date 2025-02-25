@@ -5,3 +5,4 @@ Grace Davis, Sophia Mimlitz, Ryan Cockrill, Ian Keeffe, Yoon Seok Lee
 1. Assignment 1
 2. Assignment 2
 3. Mini Project
+4. Demo 1
