@@ -5,6 +5,7 @@
 # The angle is signed, with a positive angle when the
 # marker is to the left of the camera axis
 
+#imports
 import cv2
 import numpy as np
 from cv2 import aruco
@@ -15,7 +16,7 @@ import board
 import adafruit_character_lcd.character_lcd_rgb_i2c as character_lcd
 from smbus2 import SMBus
 
-# Initialize Arduino I2C
+# Initialize I2C
 ARD_ADDR = 8
 i2c1 = SMBus(1)
 offset = 1
@@ -32,12 +33,12 @@ calibration_data = np.load('camera_calibration_data.npz')
 camera_matrix = calibration_data['camera_matrix']
 dist_coeffs = calibration_data['dist_coeffs']
 
-# Known physical size of the ArUco marker (in meters)
-marker_size = 0.05  # Example: 5 cm
+# give physical size of the ArUco marker (in meters)
+marker_size = 0.05  # 5 cm = .05 m
 
-# Camera field of view (FOV) in degrees (horizontal)
-# You need to know this value for your camera. For example, a typical webcam has ~60 degrees FOV.
-camera_fov = 60  # Change this to match your camera's FOV
+# Camera field of view in degrees (horizontal)
+# need to know this value for your camera. typical webcam has 60 degrees field of view.
+camera_fov = 60  # Change to match your camera's FOV
 
 q = queue.Queue(maxsize=1)  # Queue for LCD updates
 
@@ -52,7 +53,6 @@ def lcd_thread():
     lcd.clear()
     lcd.color = [0, 0, 100]
     lcd.text_direction = lcd.LEFT_TO_RIGHT
-
     last_message = None  # Store last message displayed
 
     while True:
@@ -81,9 +81,8 @@ while True:
     height, width, _ = frame.shape
     mid_x, mid_y = width // 2, height // 2
 
-    # Draw camera axis
+    # Draw vertical camera axis
     cv2.line(frame, (mid_x, 0), (mid_x, height), (255, 255, 255), 2)
-    #cv2.line(frame, (0, mid_y), (width, mid_y), (255, 255, 255), 2)
 
     angle = None  # Reset detected angle
 
@@ -129,7 +128,7 @@ while True:
         cv2.putText(frame, angle, (50, 50), 
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
 
-    # Only update LCD if angle changes (no more flashing)
+    # Only update LCD if angle changes
     if angle != last_angle:
         q.queue.clear()  # Remove old data before adding new
         q.put(f"Angle: {angle:.2f} deg" if isinstance(angle, (int, float)) else angle)
