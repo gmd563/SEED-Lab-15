@@ -1,6 +1,6 @@
 # Ryan Cockrill
-# Camera Calibration data .npz
-# Takes images from calibration_images and calibrates the camera
+# Creates Camera_Calibration_data.npz
+# Takes images from calibration_images folder and calibrates the camera
 
 import numpy as np
 import cv2
