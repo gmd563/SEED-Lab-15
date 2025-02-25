@@ -1,0 +1,144 @@
+# Ryan Cockrill
+# Demo 1
+# Detect an Aruco marker, and report the angle in degrees
+# between the camera axis and the maker.
+# The angle is signed, with a positive angle when the
+# marker is to the left of the camera axis
+
+import cv2
+import numpy as np
+from cv2 import aruco
+import queue
+import threading
+from time import sleep
+import board
+import adafruit_character_lcd.character_lcd_rgb_i2c as character_lcd
+from smbus2 import SMBus
+
+# Initialize Arduino I2C
+ARD_ADDR = 8
+i2c1 = SMBus(1)
+offset = 1
+
+# Initialize camera
+camera = cv2.VideoCapture(0)
+
+# Load ArUco dictionary
+aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_50)
+parameters = aruco.DetectorParameters()
+
+# Load camera calibration data
+calibration_data = np.load('camera_calibration_data.npz')
+camera_matrix = calibration_data['camera_matrix']
+dist_coeffs = calibration_data['dist_coeffs']
+
+# Known physical size of the ArUco marker (in meters)
+marker_size = 0.05  # Example: 5 cm
+
+# Camera field of view (FOV) in degrees (horizontal)
+# You need to know this value for your camera. For example, a typical webcam has ~60 degrees FOV.
+camera_fov = 60  # Change this to match your camera's FOV
+
+q = queue.Queue(maxsize=1)  # Queue for LCD updates
+
+# Store last displayed angle
+last_angle = None  
+
+def lcd_thread():
+    lcdCols = 16
+    lcdRows = 2
+    i2c = board.I2C()
+    lcd = character_lcd.Character_LCD_RGB_I2C(i2c, lcdCols, lcdRows)
+    lcd.clear()
+    lcd.color = [0, 0, 100]
+    lcd.text_direction = lcd.LEFT_TO_RIGHT
+
+    last_message = None  # Store last message displayed
+
+    while True:
+        if not q.empty():
+            message = q.get()
+            if message != last_message:  # Only update if message changed
+                print(f"LCD displaying: {message}")
+                lcd.clear()
+                lcd.message = str(message)
+                last_message = message
+        sleep(0.1)  # Prevent excessive CPU usage
+
+# Start LCD thread
+myThread = threading.Thread(target=lcd_thread, daemon=True)
+myThread.start()
+
+while True:
+    ret, frame = camera.read()
+    if not ret:
+        print("Failed to grab frame")
+        break
+
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    corners, ids, _ = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
+
+    height, width, _ = frame.shape
+    mid_x, mid_y = width // 2, height // 2
+
+    # Draw camera axis
+    cv2.line(frame, (mid_x, 0), (mid_x, height), (255, 255, 255), 2)
+    #cv2.line(frame, (0, mid_y), (width, mid_y), (255, 255, 255), 2)
+
+    angle = None  # Reset detected angle
+
+    if ids is not None:
+        ids = ids.flatten()
+        for (corner, marker_id) in zip(corners, ids):
+            marker_corners = corner.reshape((4, 2))
+            center_x = int(marker_corners[:, 0].mean())
+            center_y = int(marker_corners[:, 1].mean())
+
+            # Calculate the apparent size of the marker in pixels
+            marker_width_px = np.linalg.norm(marker_corners[0] - marker_corners[1])
+            marker_height_px = np.linalg.norm(marker_corners[1] - marker_corners[2])
+            marker_size_px = (marker_width_px + marker_height_px) / 2
+
+            # Estimate the distance of the marker from the camera
+            # Using the formula: distance = (known_size * focal_length) / apparent_size
+            focal_length = camera_matrix[0, 0]  # Focal length in pixels (from camera matrix)
+            distance = (marker_size * focal_length) / marker_size_px
+
+            # Calculate the horizontal offset from the center of the screen
+            offset_x = center_x - mid_x
+
+            # Calculate the true horizontal angle using trigonometry
+            angle = np.degrees(np.arctan2(offset_x, focal_length))
+
+            # Determine the color based on the angle
+            if angle > 0:
+                color = (0, 255, 0)  # Green for positive angle (left)
+            else:
+                color = (0, 0, 255)  # Red for negative angle (right)
+
+            # Display the angle and distance on the frame
+            text = f"Angle: {angle:.2f} deg\nDist: {distance:.2f} m"
+            cv2.putText(frame, text, (center_x - 40, center_y - 20), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2, cv2.LINE_AA)
+
+            cv2.circle(frame, (center_x, center_y), 10, color, -1)
+            frame = aruco.drawDetectedMarkers(frame, corners)
+
+    else:
+        angle = "No ArUco Marker"
+        cv2.putText(frame, angle, (50, 50), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+
+    # Only update LCD if angle changes (no more flashing)
+    if angle != last_angle:
+        q.queue.clear()  # Remove old data before adding new
+        q.put(f"Angle: {angle:.2f} deg" if isinstance(angle, (int, float)) else angle)
+        last_angle = angle  # Update last displayed angle
+
+    cv2.imshow("ArUco Tracker", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+camera.release()
+cv2.destroyAllWindows()
