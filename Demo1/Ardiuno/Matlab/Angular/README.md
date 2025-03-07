@@ -9,3 +9,6 @@ This is the simulink model for finding appropriate angular velocity output.
 
 # ControlledAnglePositionResponse.slx
 This is the simulink model for finding appropriate angle position output.
+
+# forwardResponse.slx
+This is the simulink model for motor.
