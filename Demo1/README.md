@@ -1,8 +1,10 @@
-# Arduino
-A folder that contains the arduino code used for demo 1
+# Contents
 
-# Python
-A folder that contains the python code used for demo 1
+  # Arduino
+  A folder that contains the arduino code used for demo 1
 
-# calibration_images
-A folder that contains the images used to calibrate the camera
+  # Python
+  A folder that contains the python code used for demo 1
+
+  # calibration_images
+  A folder that contains the images used to calibrate the camera
