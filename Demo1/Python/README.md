@@ -1,4 +1,4 @@
-# Demo1_maincode
+# Demo1_main
 Contains the main code that detects aruco marker and displays angle
 
 # PicTaker.py
