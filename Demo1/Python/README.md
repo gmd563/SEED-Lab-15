@@ -1,3 +1,8 @@
+# Members
+Ryan Cockrill, Grace Davis, Sofia Mimlitz
+
+# Contents
+
 # Demo1_main
 Contains the main code that detects aruco marker and displays angle
 
