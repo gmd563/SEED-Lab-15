@@ -24,6 +24,7 @@ float motorVelocity[MOTOR_COUNT] = {0.0, 0.0};
 float motorPriorPos[MOTOR_COUNT] = {0.0, 0.0};
 float batteryVoltage = 7.0;
 float totalVelocity = 0.0;
+float totalAngle = 0.0;
 
 
 // Time variables
@@ -105,7 +106,7 @@ void printData() {
   Serial.print("\t");
   Serial.print(sumVoltage);  // sum of voltage
   Serial.print("\t");
-  Serial.print(totalVelocity);  // total velocity
+  Serial.print(totalVelocity);  // total velocity change to totalAngle to see angular response
   Serial.println();
 }
 
@@ -137,6 +138,7 @@ void calcVelocityAndVolt() {
   }
   vDelta = millis();
   totalVelocity = (.075 / 2) * (motorVelocity[1] + motorVelocity[0]);
+  totalAngle = (.075/.362) * (motorRad[0] - motorRad[1]);
 
   // calculate voltage dif and sum
   sumVoltage = motorVoltage[0] + motorVoltage[1];
