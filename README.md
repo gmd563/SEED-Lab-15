@@ -3,8 +3,8 @@
 Grace Davis, Sophia Mimlitz, Ryan Cockrill, Ian Keeffe, Yoon Seok Lee
 # Projects
 1. Assignment 1
-CV: Introduction to python
-Controlls: Reading from encoders
+\nCV: Introduction to python
+\nControlls: Reading from encoders
 2. Assignment 2
 CV: Arcuo Marker detection, Color detection, Image refinement, I2C communication.
 Controlls: porportional velocity control of wheels.
