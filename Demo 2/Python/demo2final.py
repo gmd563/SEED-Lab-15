@@ -43,7 +43,6 @@ last_angle = None
 current_state = None
 
 data = []
-activity = []
 
 def send_array(data):
 	command = [ ]
