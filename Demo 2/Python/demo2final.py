@@ -52,7 +52,7 @@ def search(activity):
 	if activity[0] is not None:
 		data = [1, 0, 0]
 		command = [ ]
-		for value in command:
+		for value in data:
 			command.extend(struct.pack('<f', value))
 
 		i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
@@ -60,7 +60,7 @@ def search(activity):
 	else:
         data = [0, 0, 0]
         command = [ ]
-		for value in command:
+		for value in data:
 			command.extend(struct.pack('<f', value))
 		i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
         return search
@@ -68,7 +68,7 @@ def search(activity):
 def found(activity):
 	data = [1, activity[1], 0]
     command = [ ]
-	for value in command:
+	for value in data:
 		command.extend(struct.pack('<f', value))
 	i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
     if activity[1] <= 1:
@@ -79,7 +79,7 @@ def found(activity):
 def move(activity):
 	data = [1, activity[1], activity[2] - 1]
     command = [ ]
-	for value in command:
+	for value in data:
 		command.extend(struct.pack('<f', value))
 	i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
 	if activity[2] <= 1:
@@ -95,21 +95,21 @@ def turn(activity):
 	if activity[3] = 1:
 		data = [1, 90, 0]
 		command = [ ]
-		for value in command:
+		for value in data:
 			command.extend(struct.pack('<f', value))
 		i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
 		return search
 	elif activity[3] = 2:
 		data = [1, -90, 0]
 		command = [ ]
-		for value in command:
+		for value in data:
 			command.extend(struct.pack('<f', value))
 		i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
 		return search
 	else:
 		data = [0, 0, 0]
 		command = [ ]
-		for value in command:
+		for value in data:
 			command.extend(struct.pack('<f', value))
 		i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
 		return turn
