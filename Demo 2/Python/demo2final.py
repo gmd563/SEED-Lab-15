@@ -45,43 +45,36 @@ current_state = None
 data = []
 activity = []
 
+def send_array(data):
+	command = [ ]
+	for value in data:
+		command.extend(struct.pack('<f', value))
+	i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
+
 def start(activity):
 	return search
 
 def search(activity):
 	if activity[0] is not None:
 		data = [1, 0, 0]
-		command = [ ]
-		for value in data:
-			command.extend(struct.pack('<f', value))
-
-		i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
+		send_array(data)
 		return found
 	else:
         data = [0, 0, 0]
-        command = [ ]
-		for value in data:
-			command.extend(struct.pack('<f', value))
-		i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
+        send_array(data)
         return search
 
 def found(activity):
 	data = [1, activity[1], 0]
-    command = [ ]
-	for value in data:
-		command.extend(struct.pack('<f', value))
-	i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
-    if activity[1] <= 1:
+	send_array(data)
+	if activity[1] <= 1:
 		return move
 	else:
 		return found
 
 def move(activity):
 	data = [1, activity[1], activity[2] - 1]
-    command = [ ]
-	for value in data:
-		command.extend(struct.pack('<f', value))
-	i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
+    	send_array(data)
 	if activity[2] <= 1:
 		return arrived
 	else:
@@ -94,24 +87,15 @@ def arrived(activity):
 def turn(activity):
 	if activity[3] = 1:
 		data = [1, 90, 0]
-		command = [ ]
-		for value in data:
-			command.extend(struct.pack('<f', value))
-		i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
+		send_array(data)
 		return search
 	elif activity[3] = 2:
 		data = [1, -90, 0]
-		command = [ ]
-		for value in data:
-			command.extend(struct.pack('<f', value))
-		i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
+		send_array(data)
 		return search
 	else:
 		data = [0, 0, 0]
-		command = [ ]
-		for value in data:
-			command.extend(struct.pack('<f', value))
-		i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
+		send_array(data)
 		return turn
 
 def lcd_thread():
