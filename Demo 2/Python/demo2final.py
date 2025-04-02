@@ -64,15 +64,15 @@ def search(activity):
         return search
 
 def found(activity):
-	data = [1, activity[1], 0]
+	data = [1, -activity[1], 0]
 	send_array(data)
-	if activity[1] <= 1:
+	if abs(activity[1]) <= 1:
 		return move
 	else:
 		return found
 
 def move(activity):
-	data = [1, activity[1], activity[2] - 1]
+	data = [1, -activity[1], activity[2] - 1]
     	send_array(data)
 	if activity[2] <= 1:
 		return arrived
