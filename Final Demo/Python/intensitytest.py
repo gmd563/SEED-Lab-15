@@ -1,10 +1,21 @@
-import cv2
-import numpy as np
+def adjust_intensity(frame, alpha=1.0, beta=0):
+    adjusted = np.clip(alpha * frame + beta, 0, 255).astype(np.uint8)
+    return adjusted
 
-def adjust_intensity(image, alpha=1.0, beta=0):
-    new_image = np.clip(alpha * image + beta, 0, 255).astype(np.uint8)
-    return new_image
+alpha = 1.5  # Contrast control
+beta = 20    # Brightness control
 
-image = cv2.imread('input.jpg')
-adjusted_image = adjust_intensity(image, alpha=1.5, beta=20) #Increase contrast and brightness
-cv2.imwrite('output.jpg', adjusted_image)
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    adjusted_frame = adjust_intensity(frame, alpha, beta)
+
+    cv2.imshow('Adjusted Video', adjusted_frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to quit
+        break
+
+cap.release()
+cv2.destroyAllWindows()
