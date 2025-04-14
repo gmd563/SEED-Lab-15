@@ -127,12 +127,12 @@ def turn(activity):
     if activity[3] == 1:
         data = [0, 90, 0]
         send_array(data)
-        sleep(2)
+        while activity[0] is None or time.time()-start_time <= 2:
         return search
     elif activity[3] == 2:
         data = [0, -90, 0]
         send_array(data)
-        sleep(2)
+        while activity[0] is None or time.time()-start_time <= 2:
         return search
     else:
         data = [1, 0, 0]
