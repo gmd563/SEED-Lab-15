@@ -195,6 +195,11 @@ while True:
 
     if ids is not None:
         ids = ids.flatten()
+        closest_marker = None
+        min_distance = float('inf')
+        selected_angle = None
+        selected_id = None
+        
         for (corner, marker_id) in zip(corners, ids):
             marker_corners = corner.reshape((4, 2))
             center_x = int(marker_corners[:, 0].mean())
@@ -208,10 +213,15 @@ while True:
             distance = (marker_size * focal_length) / marker_size_px
             distance = distance * 3.28084
 
-            offset_x = center_x - mid_x
-            angle = -np.degrees(np.arctan2(offset_x, focal_length))
+            if distance <= 5.0 and distance < min_distance:
+                min_distance = distance
+                offset_x = center_x - mid_x
+                selected_angle = -np.degrees(np.arctan2(offset_x, focal_length))
+                selected_id = marker_id
 
-            activity = [ids[0], angle, distance, color]
+            if selected_id is not None:
+                activity = [selected_id, selected_angle, min_distance, color]
+                
     else:
         angle = "No ArUco Marker"
         activity = [None, None, None, None]
