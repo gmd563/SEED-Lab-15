@@ -52,6 +52,22 @@ def adjust_intensity(frame, alpha=1.0, beta=0):
     adjusted = np.clip(alpha * frame + beta, 0, 255).astype(np.uint8)
     return adjusted
 
+def detect_arrow_color(mask, color_name):
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    arrow_like_contours = []
+
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if area > 500:  # Ignore small stuff
+            approx = cv2.approxPolyDP(contour, 0.04 * cv2.arcLength(contour, True), True)
+            if len(approx) >= 5:  # Arrows often have 5+ points
+                arrow_like_contours.append((area, contour))
+
+    if arrow_like_contours:
+        arrow_like_contours.sort(reverse=True)  # Largest contour first
+        return True  # Arrow of this color detected
+    return False
+
 def send_array(data):
     command = []
     for value in data:
@@ -60,7 +76,6 @@ def send_array(data):
     while not send_to_i2c(command):
         print("Waiting for Arduino to be ready...")
         sleep(0.1)
-
 
 def send_to_i2c(command):
     try:
@@ -177,13 +192,15 @@ while True:
     mask_red2 = cv2.inRange(hsv, lower_red2, upper_red2)
     mask_red = cv2.bitwise_or(mask_red1, mask_red2)
 
-
-    if np.sum(mask_red) > np.sum(mask_green):
-        color = 2  # Red detected
-    elif np.sum(mask_green) > np.sum(mask_red):
-        color = 1  # Green detected
+    red_arrow_detected = detect_arrow_color(mask_red, "red")
+    green_arrow_detected = detect_arrow_color(mask_green, "green")
+    
+    if red_arrow_detected and not green_arrow_detected:
+        color = 2  # Red arrow detected
+    elif green_arrow_detected and not red_arrow_detected:
+        color = 1  # Green arrow detected
     else:
-        color = 1  # No color detected
+        color = 0  # Default or "none"
 
     corners, ids, _ = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
 
