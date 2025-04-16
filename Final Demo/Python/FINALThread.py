@@ -139,6 +139,15 @@ def turn(activity):
         send_array(data)
         return turn
 
+# Initialize state machine
+current_state = start
+activity_lock = threading.Lock()
+activity = [None, None, None, None]
+
+def get_latest_activity():
+    with activity_lock:
+        return activity.copy()
+
 class StateMachineThread(threading.Thread):
     def __init__(self, get_activity_func):
         super().__init__()
@@ -181,9 +190,10 @@ def lcd_thread():
 myThread = threading.Thread(target=lcd_thread, daemon=True)
 myThread.start()
 
-# Initialize state machine
-current_state = start
-activity = [None, None, None, None]
+# Start State Machine Thread
+state_machine = StateMachineThread(get_latest_activity)
+state_machine.start()
+
 
 while True:
     ret, frame = camera.read()
@@ -254,11 +264,15 @@ while True:
                 selected_id = marker_id
 
             if selected_id is not None:
-                activity = [selected_id, selected_angle, min_distance, color]
+                with activity_lock:
+                    activity = [selected_id, selected_angle, min_distance, color]
+
                 
     else:
         angle = "No ArUco Marker"
-        activity = [None, None, None, None]
+        with activity_lock:
+            activity = [None, None, None, None]
+
 
     current_state = current_state(activity)
 
@@ -270,4 +284,6 @@ while True:
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
+state_machine.stop()
+state_machine.join()
 camera.release()
