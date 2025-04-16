@@ -52,7 +52,11 @@ def adjust_intensity(frame, alpha=1.0, beta=0):
     adjusted = np.clip(alpha * frame + beta, 0, 255).astype(np.uint8)
     return adjusted
 
-def detect_arrow_color(mask, color_name):
+def detect_arrow_color(mask, color_name, region):
+    if region is not None:
+        x1, y1, x2, y2 = region
+        mask = mask[y1:y2, x1:x2]
+
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     arrow_like_contours = []
 
@@ -64,8 +68,8 @@ def detect_arrow_color(mask, color_name):
                 arrow_like_contours.append((area, contour))
 
     if arrow_like_contours:
-        arrow_like_contours.sort(reverse=True)  # Largest contour first
-        return True  # Arrow of this color detected
+        arrow_like_contours.sort(reverse=True)
+        return True
     return False
 
 def send_array(data):
@@ -74,7 +78,6 @@ def send_array(data):
         command.extend(struct.pack('<f', value))
     #print("Sending bytes:", [hex(b) for b in command[:32]]) 
     while not send_to_i2c(command):
-        print("WA")
         time.sleep(0.01)
 
 def send_to_i2c(command):
@@ -95,7 +98,6 @@ def search(activity):
     if activity[0] is not None:
         data = [1, 0, 0]
         send_array(data)
-        print("moving to found")
         return found
     else:
         data = [0, 0, 0]
@@ -108,8 +110,6 @@ def found(activity):
         data = [1, activity[1], 0]
         send_array(data)
         if abs(activity[1]) <= 30:
-            print("movetomove")
-            print(activity[2])
             return move
     return found
 
@@ -125,8 +125,6 @@ def arrived(activity):
     data = [1, 0, 0]
     send_array(data)
     time.sleep(1)
-    print("movetoturn")
-    print(activity[2],  ids)
     return turn
 
 def turn(activity):
@@ -134,13 +132,11 @@ def turn(activity):
         data = [0, 90, 0]
         send_array(data)
         time.sleep(4)
-        ids = []
         return search
     elif activity[3] == 2:
         data = [0, -90, 0]
         send_array(data)
         time.sleep(4)
-        ids = []
         return search
     else:
         data = [1, 0, 0]
@@ -162,7 +158,6 @@ def lcd_thread():
         if not q.empty():
             message = q.get()
             if message != last_message:  # Only update if message changed
-                print(f"LCD displaying: {message}")
                 lcd.clear()
                 lcd.message = str(message)
                 last_message = message
@@ -175,6 +170,10 @@ myThread.start()
 # Initialize state machine
 current_state = start
 activity = [None, None, None, None]
+
+marker_color_history = {}  # persists across loop iterations
+
+marker_color_history = {}  # Remember each marker's last known color
 
 while True:
     ret, frame = camera.read()
@@ -200,31 +199,23 @@ while True:
     mask_red2 = cv2.inRange(hsv, lower_red2, upper_red2)
     mask_red = cv2.bitwise_or(mask_red1, mask_red2)
 
-    red_arrow_detected = detect_arrow_color(mask_red, "red")
-    green_arrow_detected = detect_arrow_color(mask_green, "green")
-    
-    if red_arrow_detected and not green_arrow_detected:
-        color = 2  # Red arrow detected
-    elif green_arrow_detected and not red_arrow_detected:
-        color = 1  # Green arrow detected
-    else:
-        color = 0  # Default or "none"
-
+    # Detect ArUco markers
     corners, ids, _ = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
 
     height, width, _ = frame.shape
     mid_x, mid_y = round(width / 2), round(height / 2)
 
-    angle = None  # Reset detected angle
+    angle = None
     distance = None
 
     if ids is not None:
         ids = ids.flatten()
-        closest_marker = None
-        min_distance = float('inf')
-        selected_angle = None
         selected_id = None
-        
+        selected_angle = None
+        selected_distance = None
+        selected_color = 0
+        min_distance = float('inf')
+
         for (corner, marker_id) in zip(corners, ids):
             marker_corners = corner.reshape((4, 2))
             center_x = int(marker_corners[:, 0].mean())
@@ -236,22 +227,46 @@ while True:
 
             focal_length = camera_matrix[0, 0]
             distance = (marker_size * focal_length) / marker_size_px
-            distance = distance * 3.28084
+            distance = distance * 3.28084  # convert to feet
 
             if distance <= 5.0 and distance < min_distance:
-                min_distance = distance
                 offset_x = center_x - mid_x
-                selected_angle = -np.degrees(np.arctan2(offset_x, focal_length))
-                selected_id = marker_id
+                angle = -np.degrees(np.arctan2(offset_x, focal_length))
 
-            if selected_id is not None:
-                activity = [selected_id, selected_angle, min_distance, color]
-            else:
-                activity[:] = [None, None, None, None]
-                
+                # Define region around marker center for arrow detection
+                region_size = 1000
+                x1 = max(center_x - region_size, 0)
+                x2 = min(center_x + region_size, width)
+                y1 = max(center_y - region_size, 0)
+                y2 = min(center_y + region_size, height)
+                region = (x1, y1, x2, y2)
+
+                # Use your arrow detection function within the marker region
+                is_red = detect_arrow_color(mask_red, "red", region=region)
+                is_green = detect_arrow_color(mask_green, "green", region=region)
+
+                if is_red and not is_green:
+                    marker_color = 2
+                elif is_green and not is_red:
+                    marker_color = 1
+                else:
+                    marker_color = marker_color_history.get(marker_id, 0)  # fallback to last known color
+
+                marker_color_history[marker_id] = marker_color
+
+                selected_id = marker_id
+                selected_angle = angle
+                selected_distance = distance
+                selected_color = marker_color
+                min_distance = distance
+
+        if selected_id is not None:
+            activity = [selected_id, selected_angle, selected_distance, selected_color]
+        else:
+            activity[:] = [None, None, None, None]
     else:
-        angle = "No ArUco Marker"
-        activity = [None, None, None, None]
+        activity[:] = [None, None, None, None]
+
 
     current_state = current_state(activity)
 
