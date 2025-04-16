@@ -193,12 +193,7 @@ while True:
     upper_red1 = np.array([10, 255, 255])
     lower_red2 = np.array([170, 150, 80])
     upper_red2 = np.array([180, 255, 255])
-
-    mask_green = cv2.inRange(hsv, lower_green, upper_green)
-    mask_red1 = cv2.inRange(hsv, lower_red1, upper_red1)
-    mask_red2 = cv2.inRange(hsv, lower_red2, upper_red2)
-    mask_red = cv2.bitwise_or(mask_red1, mask_red2)
-
+    
     # Detect ArUco markers
     corners, ids, _ = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
 
@@ -217,7 +212,7 @@ while True:
         min_distance = float('inf')
 
         for (corner, marker_id) in zip(corners, ids):
-            marker_corners = corner.reshape((4, 2))
+            marker_corners = corner.reshape((4, 2)).astype(np.int32)
             center_x = int(marker_corners[:, 0].mean())
             center_y = int(marker_corners[:, 1].mean())
 
@@ -233,18 +228,25 @@ while True:
                 offset_x = center_x - mid_x
                 angle = -np.degrees(np.arctan2(offset_x, focal_length))
 
-                # Define region around marker center for arrow detection
-                region_size = 1000
-                x1 = max(center_x - region_size, 0)
-                x2 = min(center_x + region_size, width)
-                y1 = max(center_y - region_size, 0)
-                y2 = min(center_y + region_size, height)
-                region = (x1, y1, x2, y2)
-
-                # Use your arrow detection function within the marker region
-                is_red = detect_arrow_color(mask_red, "red", region=region)
-                is_green = detect_arrow_color(mask_green, "green", region=region)
-
+                # ROI Mask ################################################################################################################
+                rotate_rect = cv2. minAreaRect(marker_corners) # Rotate Rectangle
+                rect_points = np.int0(cv2.boxPoints(rotate_rect)) # Identify corners
+                w = int(rotate_rect[1][0]) # Rotate Rectangle w/ perspective transform
+                h = int(rotate_rect[1][1]) # Rotate Rectangle w/ perspective transform
+                if w < h:  # Ensure correct width
+                    w,h = w,h
+                rotate_rect = (rotate_rect[0], 1.5 * rotate_rect[1][0], rotate_rect[1][1], rotate_rect[2]) # Increase ROI Area in width
+                destination_pts = np.array([[0,0], [w - 1, 0], [w - 1, h - 1], [0, h - 1]], dtype="float32") # Define Destination Points
+                perspective = cv2.getPerspectiveTransform(rect_points.astype("float32"), destination_pts) # Perspective Transform Matrix
+                cropped_hsv = cv2.warpPerspective(hsv, perspective, (w,h)) # Crop Image
+                
+                # Implement ROI in color detection
+                mask_green = cv2.inRange(cropped_hsv, lower_green, upper_green)
+                mask_red1 = cv2.inRange(cropped_hsv, lower_red1, upper_red1)
+                mask_red2 = cv2.inRange(cropped_hsv, lower_red2, upper_red2)
+                mask_red = cv2.bitwise_or(mask_red1, mask_red2)
+                ###########################################################################################################################
+                
                 if is_red and not is_green:
                     marker_color = 2
                 elif is_green and not is_red:
