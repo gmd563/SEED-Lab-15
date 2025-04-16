@@ -245,6 +245,10 @@ while True:
                 mask_red1 = cv2.inRange(cropped_hsv, lower_red1, upper_red1)
                 mask_red2 = cv2.inRange(cropped_hsv, lower_red2, upper_red2)
                 mask_red = cv2.bitwise_or(mask_red1, mask_red2)
+
+                # Implement Masks w/ Arrow Detection
+                is_red = detect_arrow_color(mask_red, "red")
+                is_green = detect_arrow_color(mask_green, "green")
                 ###########################################################################################################################
                 
                 if is_red and not is_green:
