@@ -11,11 +11,14 @@ parameters = aruco.DetectorParameters()
 
 # Load camera calibration data
 calibration_data = np.load('camera_calibration_data.npz')
-camera_matrix = calibration_data['camera_matrix']
-dist_coeffs = calibration_data['dist_coeffs']
+camera_matrix = calibration_data['camera_matrix'] # mtx
+dist_coeffs = calibration_data['dist_coeffs'] # coeffs
 
 # Set Aruco marker size
 marker_size = 0.05  # in meters
+
+# camera HFOV
+camera_fov = 61
 
 # Define HSV color ranges
 lower_green = np.array([40, 100, 50])
@@ -25,6 +28,15 @@ upper_red1 = np.array([10, 255, 255])
 lower_red2 = np.array([170, 150, 80])
 upper_red2 = np.array([180, 255, 255])
 
+# Intensity calibration variables
+alpha = 1.5  # Contrast control
+beta = 20    # Brightness control
+
+def adjust_intensity(frame, alpha=1.0, beta=0):
+    adjusted = np.clip(alpha * frame + beta, 0, 255).astype(np.uint8)
+    return adjusted
+
+# arrow detection
 def detect_arrow_color(mask, draw_on):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for contour in contours:
@@ -32,8 +44,12 @@ def detect_arrow_color(mask, draw_on):
         if area > 500:
             approx = cv2.approxPolyDP(contour, 0.04 * cv2.arcLength(contour, True), True)
             if len(approx) >= 5:
-                cv2.drawContours(draw_on, [contour], -1, (255, 0, 0), 2)
-                return True
+                arrow_like_contours.append((area, contour))
+        
+        if arrow_like_contours:
+        arrow_like_contours.sort(reverse=True)  # Largest contour first
+        cv2.drawContours(draw_on, [contour], -1, (255, 0, 0), 2)
+        return True  # Arrow of this color detected
     return False
 
 while True:
