@@ -293,7 +293,7 @@ while True:
             #rect = (rect[0], 1.5 * rect[1][0], rect[1][1], rect[2]) # Increase ROI Area in width
             destination_pts = np.array([[0,0], [extend_w - 1, 0], [extend_w - 1, h - 1], [0, h - 1]], dtype="float32") # Define Destination Points
             perspective_mtx = cv2.getPerspectiveTransform(box.astype("float32"), destination_pts) # Perspective Transform Matrix
-            crop_hsv = cv2.warpPerspective(hsv, perspective_mtx, (extend_w,h)) # Crop Image
+            crop_hsv = cv2.warpPerspective(hsv, perspective_mtx, (extend_w,int(h))) # Crop Image
 
             # Implement ROI in color detection
             mask_green = cv2.inRange(crop_hsv, lower_green, upper_green)
