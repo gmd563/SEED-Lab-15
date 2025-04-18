@@ -1,3 +1,5 @@
+# Grace Davis
+
 # import all libraries
 import cv2
 import numpy as np
