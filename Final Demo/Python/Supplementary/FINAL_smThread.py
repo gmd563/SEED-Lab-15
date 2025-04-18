@@ -287,7 +287,7 @@ while True:
                 w,h = h,w # swap width and height to ensure ROI is always wider than tall
             extend_w = int(1.5*w)
 
-            box = cv2.boxPoints(((crop_x, crop_y), (extend_w, h), crop_angle))
+            box = cv2.boxPoints(((crop_x, crop_y), (extend_w, int(h)), crop_angle))
 
             #rect = (rect[0], 1.5 * rect[1][0], rect[1][1], rect[2]) # Increase ROI Area in width
             destination_pts = np.array([[0,0], [extend_w - 1, 0], [extend_w - 1, h - 1], [0, h - 1]], dtype="float32") # Define Destination Points
