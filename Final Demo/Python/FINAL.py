@@ -45,78 +45,104 @@ def adjust_intensity(frame, alpha=1.0, beta=0):
     return adjusted
 
 def send_array(data):
-    command = []
-    for value in data:
-        command.extend(struct.pack('<f', value))
-    while not send_to_i2c(command):
-        time.sleep(0.01)
+    command = struct.pack('<' + 'f' * len(data), *data)  # pack all floats at once
+    byte_list = list(command[:32])  # convert bytes to list of ints
+
+    try_count = 0
+    while not send_to_i2c(byte_list):
+        try_count += 1
+        if try_count > 3:
+            break
+        time.sleep(0.002)
+
 
 def send_to_i2c(command):
     try:
-        i2c1.write_i2c_block_data(ARD_ADDR, offset, command[:32])
+        i2c1.write_i2c_block_data(ARD_ADDR, offset, command)
         return True
     except OSError:
         return False
 
-def start(activity):
-    return search
 
-def search(activity):
-    if activity[0] is not None:
+activity_lock = threading.Lock() # lock shared data
+# State Machine Class
+class StateMachine:
+    def __init__(self):
+        self.ids = []
+        self.state = self.start
+    
+    def run(self):
+        while True:
+            with activity_lock:
+                self.state = self.state(activity)
+            time.sleep(0.1) 
+
+    def start(self, activity):
+        return self.search 
+    
+    def search(self, activity):
+        if activity[0] is not None:
+            data = [1, 0, 0]
+            send_array(data)
+            return self.found
+        else:
+            data = [0, 0, 0]
+            send_array(data)
+            return self.search
+
+    def found(self, activity):
+        if activity[1] is not None:
+            data = [1, activity[1], 0]
+            send_array(data)
+            if abs(activity[1]) <= 30:
+                return self.move
+        return self.found
+
+    def move(self, activity):
+        if activity[1] is not None and activity[2] is not None: # addition of activity[2] is not None to prevent type errors if no aruco marker is detected
+            if activity[2] > 1.2:
+                data = [1, activity[1], activity[2] - 1]
+                send_array(data)
+                return self.move
+            else:
+                return self.arrived
+        return self.move
+
+    def arrived(self, activity):
+        global arrival_time
         data = [1, 0, 0]
         send_array(data)
-        return found
-    else:
-        data = [0, 0, 0]
-        send_array(data)
-        return search
+        time.sleep(.75)
+        arrival_time = time.time()
+        return self.turn
 
-def found(activity):
-    if activity[1] is not None:
-        data = [1, activity[1], 0]
-        send_array(data)
-        if abs(activity[1]) <= 30:
-            return move
-    return found
+    def turn(self, activity):
+        if activity[3] == 1:
+            data = [0, 100, 0]
+            send_array(data)
+            return self.wait
+        elif activity[3] == 2:
+            data = [0, -100, 0]
+            send_array(data)
+            return self.wait
+        else:
+            data = [1, 0, 0]
+            send_array(data)
+            return self.turn
+        
+    def wait(self, activity):
+        global arrival_time
+        if time.time() - arrival_time < 4:
+            return self.wait
+        return self.search
 
-def move(activity):
-    if activity[1] is not None:
-        data = [1, activity[1], activity[2] - 1]
-        send_array(data)
-        if activity[2] <= 1:
-            return arrived
-    return move
+# initialize State Machine thread
+with activity_lock:
+    activity = [None, None, None, None]
+sm = StateMachine()
+sm_thread = threading.Thread(target=sm.run, daemon=True)
+sm_thread.start()
 
-def arrived(activity):
-    global arrival_time
-    data = [1, 0, 0]
-    send_array(data)
-    time.sleep(1)
-    arrival_time = time.time()
-    return turn
-
-def turn(activity):
-    if activity[3] == 1:
-        data = [0, 90, 0]
-        send_array(data)
-        return wait
-    elif activity[3] == 2:
-        data = [0, -90, 0]
-        send_array(data)
-        return wait
-    else:
-        data = [1, 0, 0]
-        send_array(data)
-        return turn
-
-def wait(activity):
-    global arrival_time
-    if time.time() - arrival_time < 4:
-        return wait
-    return search
-
-current_state = start
-activity = [None, None, None, None]
 
 while True:
     ret, frame = camera.read()
@@ -169,11 +195,11 @@ while True:
             distance = (marker_size * focal_length) / marker_size_px
             distance *= 3.28084
 
-            if distance <= 5.0 and distance < min_distance:
+            if distance <= 5.3 and distance < min_distance:
                 offset_x = center_x - mid_x
                 angle = -np.degrees(np.arctan2(offset_x, focal_length))
 
-                region_width = int(marker_width_px * 3)
+                region_width = int(marker_width_px * 4)
                 region_height = int(marker_height_px)
                 x1 = max(center_x - region_width // 2, 0)
                 x2 = min(center_x + region_width // 2, width)
@@ -186,9 +212,9 @@ while True:
                 red_sum = np.sum(region_red)
                 green_sum = np.sum(region_green)
 
-                if red_sum > green_sum and red_sum > 50000:
+                if red_sum > green_sum and red_sum > 35000:
                     marker_color = 2
-                elif green_sum > red_sum and green_sum > 50000:
+                elif green_sum > red_sum and green_sum > 35000:
                     marker_color = 1
                 else:
                     marker_color = 0
@@ -205,8 +231,6 @@ while True:
             activity[:] = [None, None, None, None]
     else:
         activity[:] = [None, None, None, None]
-
-    current_state = current_state(activity)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
