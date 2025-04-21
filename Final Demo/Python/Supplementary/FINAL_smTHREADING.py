@@ -70,7 +70,7 @@ class StateMachine:
         while True:
             with activity_lock:
                 self.state = self.state(activity)
-            time.sleep(0.1) # MAY NEED TO ASJUST (according to chat)
+            time.sleep(0.001) # MAY NEED TO ASJUST (according to chat)
 
     def start(self, activity):
         return self.search 
@@ -79,7 +79,6 @@ class StateMachine:
         if activity[0] is not None:
             data = [1, 0, 0]
             send_array(data)
-            #print("moving to found")
             return self.found
         else:
             data = [0, 0, 0]
@@ -91,7 +90,6 @@ class StateMachine:
             data = [1, activity[1], 0]
             send_array(data)
             if abs(activity[1]) <= 30:
-                #print("move to move")
                 return self.move
         return self.found
 
