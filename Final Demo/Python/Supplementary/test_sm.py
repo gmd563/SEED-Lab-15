@@ -180,37 +180,6 @@ sm_thread.start()
 
 ##################################################################################
 
-#def lcd_thread():
-    #lcdCols = 16
-    #lcdRows = 2
-    #i2c2 = board.I2C()
-    #lcd = Character_LCD_RGB_I2C(i2c2, lcdCols, lcdRows)
-    #lcd.clear()
-    #lcd.color = [0, 0, 100]
-    #lcd.text_direction = lcd.LEFT_TO_RIGHT
-
-    #last_message = None  # Store last message displayed
-
-    #while True:
-        #if not q.empty():
-            #message = q.get()
-            #if message != last_message:  # Only update if message changed
-                #print(f"LCD displaying: {message}")
-                #lcd.clear()
-                #lcd.message = str(message)
-                #last_message = message
-        #time.sleep(0.1)  # Prevent excessive CPU usage
-
-# Start LCD thread
-#myThread = threading.Thread(target=lcd_thread, daemon=True)
-#myThread.start()
-
-# Initialize state machine
-#current_state = start
-
-#with activity_lock:
-    #activity = [None, None, None, None]
-
 while True:
     ret, frame = camera.read()
     if not ret:
