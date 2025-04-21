@@ -70,7 +70,7 @@ class StateMachine:
         while True:
             with activity_lock:
                 self.state = self.state(activity)
-            time.sleep(0.001) #### FLAG - CHANGE FOR FINE TUNED CONTROL #### - how fast pi communicates to the arduino
+            time.sleep(0.01) #### FLAG - CHANGE FOR FINE TUNED CONTROL #### - how fast pi communicates to the arduino
 
     def start(self, activity):
         return self.search 
