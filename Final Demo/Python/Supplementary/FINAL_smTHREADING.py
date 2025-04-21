@@ -97,7 +97,7 @@ class StateMachine:
 
     def move(self, activity):
         if activity[1] is not None and activity[2] is not None: # addition of activity[2] is not None to prevent type errors if no aruco marker is detected
-            if activity[2] > 1.0:
+            if activity[2] > 1.2: #### FLAG - CHANGE FOR FINE TUNED CONTROL ####
                 data = [1, activity[1], activity[2] - 1]
                 send_array(data)
                 return self.move
@@ -192,7 +192,7 @@ while True:
             distance = (marker_size * focal_length) / marker_size_px
             distance *= 3.28084
 
-            if distance <= 5.5 and distance < min_distance:
+            if distance <= 5.7 and distance < min_distance: #### FLAG - CHANGE FOR FINE TUNED CONTROL ####
                 offset_x = center_x - mid_x
                 angle = -np.degrees(np.arctan2(offset_x, focal_length))
 
