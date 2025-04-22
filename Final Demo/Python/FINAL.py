@@ -226,7 +226,7 @@ while True:
                 min_distance = distance
 
         if selected_id is not None and selected_distance is not None:
-            activity[:] = [ids, selected_angle, selected_distance, selected_color]
+            activity[:] = [ids, selected_angle, selected_distance, selected_color] #### CHECK #### -> consider changing to: activity[:] = [selected_ids, selected_angle, selected_distance, selected_color]
         else:
             activity[:] = [None, None, None, None]
     else:
